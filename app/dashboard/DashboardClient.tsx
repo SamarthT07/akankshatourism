@@ -17,27 +17,40 @@
 //   customBox: '',
 // };
 
-// export default function DashboardClient() {
+// const initialReportData = {
+//   receipt: Array(30).fill({ amount: '', particulars: '' }),
+//   payment: Array(30).fill({ amount: '', description: '' }),
+// };
+
+// export default function Dashboard() {
 //   const [activeTab, setActiveTab] = useState('bus-wise');
 //   const [buses, setBuses] = useState(Array(9).fill(null).map(() => JSON.parse(JSON.stringify(initialBusData))));
 //   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+//   const [reportData, setReportData] = useState(initialReportData);
 
 //   useEffect(() => {
 //     const savedData = localStorage.getItem('busData');
 //     if (savedData) {
 //       setBuses(JSON.parse(savedData));
 //     }
+//     const savedReportData = localStorage.getItem('reportData');
+//     if (savedReportData) {
+//       setReportData(JSON.parse(savedReportData));
+//     }
 //   }, []);
 
 //   const saveData = () => {
 //     localStorage.setItem('busData', JSON.stringify(buses));
+//     localStorage.setItem('reportData', JSON.stringify(reportData));
 //     alert('Data saved successfully!');
 //   };
 
 //   const eraseData = () => {
 //     if (window.confirm('Are you sure you want to erase all data?')) {
 //       localStorage.removeItem('busData');
+//       localStorage.removeItem('reportData');
 //       setBuses(Array(9).fill(null).map(() => JSON.parse(JSON.stringify(initialBusData))));
+//       setReportData(initialReportData);
 //     }
 //   };
 
@@ -84,6 +97,22 @@
 
 //   const calculateAllBusesTotal = () => {
 //     return buses.reduce((sum, bus) => sum + parseFloat(calculateTotals(bus).totalTotal), 0).toFixed(2);
+//   };
+
+//   const updateReportData = (type, index, field, value) => {
+//     const newReportData = { ...reportData };
+//     newReportData[type][index] = { ...newReportData[type][index], [field]: value };
+//     setReportData(newReportData);
+//   };
+
+//   const addReportRow = (type) => {
+//     const newReportData = { ...reportData };
+//     newReportData[type].push({ amount: '', [type === 'receipt' ? 'particulars' : 'description']: '' });
+//     setReportData(newReportData);
+//   };
+
+//   const calculateReportTotal = (type) => {
+//     return reportData[type].reduce((total, item) => total + (parseFloat(item.amount) || 0), 0).toFixed(2);
 //   };
 
 //   const renderBusWiseTab = () => (
@@ -194,10 +223,10 @@
 //   );
 
 //   const renderAgentWiseTab = () => {
-//     const allAgents = buses.flatMap(bus => 
+//     const allAgents = buses.flatMap((bus, busIndex) => 
 //       [bus.ho, bus.online, ...bus.agents]
 //         .filter(agent => agent.name)
-//         .map(agent => ({ ...agent, vehicleNumber: bus.vehicleNumber }))
+//         .map(agent => ({ ...agent, busId: bus.vehicleNumber || `Bus ${busIndex + 1}` }))
 //     );
 
 //     const uniqueAgents = Array.from(new Set(allAgents.map(a => a.name)));
@@ -209,20 +238,21 @@
 //             <tr className="bg-gray-100">
 //               <th className="px-4 py-2 text-left">Agent Name</th>
 //               {buses.map((bus, index) => (
-//                 <th key={index} className="px-4 py-2 text-left">{bus.vehicleNumber || `Vehicle ${index + 1}`}</th>
+//                 <th key={index} className="px-4 py-2 text-left">{bus.vehicleNumber || `Bus ${index + 1}`}</th>
 //               ))}
-//               <th className="px-4 py-2 text-left">Total (₹)</th>
+//               <th className="px-4 py-2 text-left">Total</th>
 //             </tr>
 //           </thead>
 //           <tbody>
 //             {uniqueAgents.map(agentName => {
-//               const agentData =   allAgents.filter(a => a.name === agentName);
+//               const agentData = allAgents.filter(a => a.name === agentName);
 //               const totalAmount = agentData.reduce((sum, a) => sum + (parseFloat(a.total) || 0), 0);
 //               return (
 //                 <tr key={agentName}>
 //                   <td className="px-4 py-2">{agentName}</td>
 //                   {buses.map((bus, index) => {
-//                     const data = agentData.find(a => a.vehicleNumber === bus.vehicleNumber);
+//                     const busId = bus.vehicleNumber || `Bus ${index + 1}`;
+//                     const data = agentData.find(a => a.busId === busId);
 //                     return <td key={index} className="px-4 py-2">{data ? data.total : ''}</td>;
 //                   })}
 //                   <td className="px-4 py-2">{totalAmount.toFixed(2)}</td>
@@ -241,6 +271,103 @@
 //       </div>
 //     );
 //   };
+
+//   const renderReportsTab = () => (
+//     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+//       <div>
+//         <h2 className="text-2xl font-bold mb-4">RECEIPT</h2>
+//         <table className="w-full">
+//           <thead>
+//             <tr>
+//               <th className="text-left">Amount</th>
+//               <th className="text-left">Particulars</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {reportData.receipt.map((item, index) => (
+//               <tr key={index}>
+//                 <td>
+//                   <input
+//                     type="number"
+//                     value={item.amount}
+//                     onChange={(e) => updateReportData('receipt', index, 'amount', e.target.value)}
+//                     className="w-full p-2 border rounded"
+//                   />
+//                 </td>
+//                 <td>
+//                   <input
+//                     type="text"
+//                     value={item.particulars}
+//                     onChange={(e) => updateReportData('receipt', index, 'particulars', e.target.value)}
+//                     className="w-full p-2 border rounded"
+//                   />
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//           <tfoot>
+//             <tr>
+//               <td colSpan={2}>
+//                 <button onClick={() => addReportRow('receipt')} className="mt-2 p-2 bg-blue-500 text-white rounded">
+//                   Add Row
+//                 </button>
+//               </td>
+//             </tr>
+//             <tr>
+//               <td className="font-bold">Total: {calculateReportTotal('receipt')}</td>
+//               <td></td>
+//             </tr>
+//           </tfoot>
+//         </table>
+//       </div>
+//       <div>
+//         <h2 className="text-2xl font-bold mb-4">PAYMENT</h2>
+//         <table className="w-full">
+//           <thead>
+//             <tr>
+//               <th className="text-left">Amount</th>
+//               <th className="text-left">Description</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {reportData.payment.map((item, index) => (
+//               <tr key={index}>
+//                 <td>
+//                   <input
+//                     type="number"
+//                     value={item.amount}
+//                     onChange={(e) => updateReportData('payment', index, 'amount', e.target.value)}
+//                     className="w-full p-2 border rounded"
+//                   />
+//                 </td>
+//                 <td>
+//                   <input
+//                     type="text"
+//                     value={item.description}
+//                     onChange={(e) => updateReportData('payment', index, 'description', e.target.value)}
+//                     className="w-full p-2 border rounded"
+//                   />
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//           <tfoot>
+//             <tr>
+//               <td colSpan={2}>
+//                 <button onClick={() => addReportRow('payment')} className="mt-2 p-2 bg-blue-500 text-white rounded">
+//                   Add Row
+//                 </button>
+//               </td>
+//             </tr>
+//             <tr>
+//               <td className="font-bold">Total: {calculateReportTotal('payment')}</td>
+//               <td></td>
+//             </tr>
+//           </tfoot>
+//         </table>
+//       </div>
+//     </div>
+//   );
 
 //   const generateBusWisePDF = () => {
 //     const doc = new jsPDF();
@@ -288,29 +415,34 @@
 //   };
 
 //   const generateAgentWisePDF = () => {
-//     const doc = new jsPDF();
-//     doc.setFontSize(18);
-//     doc.text('Akanksha Tourism - Agent Wise Report', 105, 15, { align: 'center' });
-//     doc.setFontSize(12);
-//     doc.text(`Date: ${date}`, 195, 15, { align: 'right' });
+//     const doc = new jsPDF('l', 'mm', 'a4');
+//     const pageWidth = doc.internal.pageSize.width;
+    
+//     doc.setFontSize(24);
+//     doc.setFont(undefined, 'bold');
+//     doc.text('Akanksha Tourism - Agent Wise Report', pageWidth / 2, 20, { align: 'center' });
+//     doc.setFontSize(14);
+//     doc.setFont(undefined, 'normal');
+//     doc.text(`Date: ${date}`, pageWidth - 10, 20, { align: 'right' });
 
-//     const allAgents = buses.flatMap(bus => 
+//     const allAgents = buses.flatMap((bus, busIndex) => 
 //       [bus.ho, bus.online, ...bus.agents]
 //         .filter(agent => agent.name)
-//         .map(agent => ({ ...agent, vehicleNumber: bus.vehicleNumber }))
+//         .map(agent => ({ ...agent, busId: bus.vehicleNumber || `Bus ${busIndex + 1}` }))
 //     );
 
 //     const uniqueAgents = Array.from(new Set(allAgents.map(a => a.name)));
 
 //     const tableData = [
-//       ['Agent Name', ...buses.map(bus => bus.vehicleNumber || 'Vehicle'), 'Total (₹)'],
+//       ['Agent Name', ...buses.map((bus, index) => bus.vehicleNumber || `Bus ${index + 1}`), 'Total'],
 //       ...uniqueAgents.map(agentName => {
 //         const agentData = allAgents.filter(a => a.name === agentName);
 //         const totalAmount = agentData.reduce((sum, a) => sum + (parseFloat(a.total) || 0), 0);
 //         return [
 //           agentName,
-//           ...buses.map(bus => {
-//             const data = agentData.find(a => a.vehicleNumber === bus.vehicleNumber);
+//           ...buses.map((bus, index) => {
+//             const busId = bus.vehicleNumber || `Bus ${index + 1}`;
+//             const data = agentData.find(a => a.busId === busId);
 //             return data ? data.total : '';
 //           }),
 //           totalAmount.toFixed(2)
@@ -324,23 +456,101 @@
 //     ];
 
 //     doc.autoTable({
-//       startY: 25,
+//       startY: 30,
 //       head: [tableData[0]],
 //       body: tableData.slice(1),
 //       theme: 'grid',
-//       styles: { fontSize: 8, cellPadding: 2 },
-//       headStyles: { fillColor: [200, 200, 200] },
-//       alternateRowStyles: { fillColor: [240, 240, 240] },
+//       styles: { fontSize: 10, cellPadding: 2 },
+//       headStyles: { fillColor: [200, 200, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
+//       columnStyles: {
+//         0: { cellWidth: 40, fontStyle: 'bold' },
+//         [tableData[0].length - 1]: { cellWidth: 30, fontStyle: 'bold' }
+//       },
+//       didParseCell: (data) => {
+//         if (data.row.index === tableData.length - 2) {
+//           data.cell.styles.fontStyle = 'bold';
+//           data.cell.styles.textColor = [0, 0, 100];
+//         }
+//       }
 //     });
 
 //     doc.save('agent_wise_report.pdf');
 //   };
 
+//   const generateReportsPDF = () => {
+//     const doc = new jsPDF();
+//     doc.setFontSize(18);
+//     doc.text('Akanksha Tourism', 105, 15, { align: 'center' });
+//     doc.setFontSize(12);
+//     doc.text(`Date: ${date}`, 195, 15, { align: 'right' });
+
+//     const pageWidth = doc.internal.pageSize.width;
+//     const margin = 10;
+//     const columnWidth = (pageWidth - 2 * margin) / 2;
+
+//     // RECEIPT Table
+//     doc.setFontSize(14);
+//     doc.setTextColor(255, 255, 255);
+//     doc.setFillColor(255, 165, 0); // Orange color
+//     doc.rect(margin, 25, columnWidth, 8, 'F');
+//     doc.text('RECEIPT', margin + 2, 31);
+
+//     doc.autoTable({
+//       startY: 33,
+//       head: [['Amount', 'Particulars']],
+//       body: reportData.receipt.map(item => [item.amount, item.particulars]),
+//       theme: 'grid',
+//       styles: { fontSize: 8, cellPadding: 2 },
+//       headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0] },
+//       columnStyles: {
+//         0: { cellWidth: columnWidth * 0.3 },
+//         1: { cellWidth: columnWidth * 0.7 }
+//       },
+//       margin: { left: margin },
+//       tableWidth: columnWidth,
+//     });
+
+//     // PAYMENT Table
+//     doc.setFontSize(14);
+//     doc.setTextColor(255, 255, 255);
+//     doc.setFillColor(255, 165, 0); // Orange color
+//     doc.rect(margin + columnWidth, 25, columnWidth, 8, 'F');
+//     doc.text('PAYMENT', margin + columnWidth + 2, 31);
+
+//     doc.autoTable({
+//       startY: 33,
+//       head: [['Amount', 'Description']],
+//       body: reportData.payment.map(item => [item.amount, item.description]),
+//       theme: 'grid',
+//       styles: { fontSize: 8, cellPadding: 2 },
+//       headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0] },
+//       columnStyles: {
+//         0: { cellWidth: columnWidth * 0.3 },
+//         1: { cellWidth: columnWidth * 0.7 }
+//       },
+//       margin: { left: margin + columnWidth },
+//       tableWidth: columnWidth,
+//     });
+
+//     // Add totals at the bottom of each table
+//     const receiptTotal = calculateReportTotal('receipt');
+//     const paymentTotal = calculateReportTotal('payment');
+
+//     doc.setFontSize(10);
+//     doc.setTextColor(0, 0, 0);
+//     doc.text(`Total: ${receiptTotal}`, margin, doc.autoTable.previous.finalY + 10);
+//     doc.text(`Total: ${paymentTotal}`, margin + columnWidth, doc.autoTable.previous.finalY + 10);
+
+//     doc.save('financial_report.pdf');
+//   };
+
 //   const generatePDF = () => {
 //     if (activeTab === 'bus-wise') {
 //       generateBusWisePDF();
-//     } else {
+//     } else if (activeTab === 'agent-wise') {
 //       generateAgentWisePDF();
+//     } else {
+//       generateReportsPDF();
 //     }
 //   };
 
@@ -374,10 +584,18 @@
 //           >
 //             Agent Wise
 //           </button>
+//           <button
+//             className={`px-4 py-2 font-medium ${activeTab === 'reports' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+//             onClick={() => setActiveTab('reports')}
+//           >
+//             Reports
+//           </button>
 //         </div>
 //       </div>
 //       <div className="mb-8">
-//         {activeTab === 'bus-wise' ? renderBusWiseTab() : renderAgentWiseTab()}
+//         {activeTab === 'bus-wise' && renderBusWiseTab()}
+//         {activeTab === 'agent-wise' && renderAgentWiseTab()}
+//         {activeTab === 'reports' && renderReportsTab()}
 //       </div>
 //       <div className="text-center">
 //         <h2 className="text-2xl font-semibold mb-2">All Buses Total</h2>
@@ -389,12 +607,53 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { UserOptions } from 'jspdf-autotable';
 
-const initialAgent = { name: '', seat: '', amount: '', percentage: '', commission: '', total: '' };
-const initialBusData = {
+
+type jsPDFWithAutoTable = jsPDF & {
+  autoTable: (options: any) => void;
+  lastAutoTable: { finalY: number };
+};
+
+/// <reference types="jspdf-autotable" />
+
+interface Agent {
+  name: string;
+  seat: string;
+  amount: string;
+  percentage: string;
+  commission: string;
+  total: string;
+}
+
+interface BusData {
+  vehicleNumber: string;
+  route: string;
+  driverName: string;
+  pickupMan: string;
+  agents: Agent[];
+  ho: Agent;
+  online: Agent;
+  advanceReport: string;
+  customBox: string;
+}
+
+interface ReportItem {
+  amount: string;
+  particulars?: string;
+  description?: string;
+}
+
+interface ReportData {
+  receipt: ReportItem[];
+  payment: ReportItem[];
+}
+
+const initialAgent: Agent = { name: '', seat: '', amount: '', percentage: '', commission: '', total: '' };
+const initialBusData: BusData = {
   vehicleNumber: '',
   route: '',
   driverName: '',
@@ -406,16 +665,16 @@ const initialBusData = {
   customBox: '',
 };
 
-const initialReportData = {
+const initialReportData: ReportData = {
   receipt: Array(30).fill({ amount: '', particulars: '' }),
   payment: Array(30).fill({ amount: '', description: '' }),
 };
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState('bus-wise');
-  const [buses, setBuses] = useState(Array(9).fill(null).map(() => JSON.parse(JSON.stringify(initialBusData))));
+  const [activeTab, setActiveTab] = useState<'bus-wise' | 'agent-wise' | 'reports'>('bus-wise');
+  const [buses, setBuses] = useState<BusData[]>(Array(9).fill(null).map(() => JSON.parse(JSON.stringify(initialBusData))));
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [reportData, setReportData] = useState(initialReportData);
+  const [reportData, setReportData] = useState<ReportData>(initialReportData);
 
   useEffect(() => {
     const savedData = localStorage.getItem('busData');
@@ -428,81 +687,93 @@ export default function Dashboard() {
     }
   }, []);
 
-  const saveData = () => {
+  const saveData = useCallback(() => {
     localStorage.setItem('busData', JSON.stringify(buses));
     localStorage.setItem('reportData', JSON.stringify(reportData));
     alert('Data saved successfully!');
-  };
+  }, [buses, reportData]);
 
-  const eraseData = () => {
+  const eraseData = useCallback(() => {
     if (window.confirm('Are you sure you want to erase all data?')) {
       localStorage.removeItem('busData');
       localStorage.removeItem('reportData');
       setBuses(Array(9).fill(null).map(() => JSON.parse(JSON.stringify(initialBusData))));
       setReportData(initialReportData);
     }
-  };
+  }, []);
 
-  const updateBus = (index, field, value) => {
-    const newBuses = [...buses];
-    newBuses[index] = { ...newBuses[index], [field]: value };
-    setBuses(newBuses);
-  };
+  const updateBus = useCallback((index: number, field: keyof BusData, value: string) => {
+    setBuses(prevBuses => {
+      const newBuses = [...prevBuses];
+      newBuses[index] = { ...newBuses[index], [field]: value };
+      return newBuses;
+    });
+  }, []);
 
-  const updateAgent = (busIndex, agentIndex, field, value) => {
-    const newBuses = [...buses];
-    const agent = { ...newBuses[busIndex].agents[agentIndex], [field]: value };
-    
-    if (field === 'amount' || field === 'percentage') {
-      const amount = parseFloat(agent.amount) || 0;
-      const percentage = parseFloat(agent.percentage) || 0;
-      agent.commission = percentage ? (amount * percentage / 100).toFixed(2) : '';
-      agent.total = percentage ? (amount - parseFloat(agent.commission)).toFixed(2) : amount.toFixed(2);
-    }
-    
-    newBuses[busIndex].agents[agentIndex] = agent;
-    setBuses(newBuses);
-  };
+  const updateAgent = useCallback((busIndex: number, agentIndex: number, field: keyof Agent, value: string) => {
+    setBuses(prevBuses => {
+      const newBuses = [...prevBuses];
+      const agent = { ...newBuses[busIndex].agents[agentIndex], [field]: value };
+      
+      if (field === 'amount' || field === 'percentage') {
+        const amount = parseFloat(agent.amount) || 0;
+        const percentage = parseFloat(agent.percentage) || 0;
+        agent.commission = percentage ? (amount * percentage / 100).toFixed(2) : '';
+        agent.total = percentage ? (amount - parseFloat(agent.commission)).toFixed(2) : amount.toFixed(2);
+      }
+      
+      newBuses[busIndex].agents[agentIndex] = agent;
+      return newBuses;
+    });
+  }, []);
 
-  const updateHOOrOnline = (busIndex, type, field, value) => {
-    const newBuses = [...buses];
-    const newData = { ...newBuses[busIndex][type], [field]: value };
-    if (field === 'amount' || field === 'percentage') {
-      const amount = parseFloat(newData.amount) || 0;
-      const percentage = parseFloat(newData.percentage) || 0;
-      newData.commission = percentage ? (amount * percentage / 100).toFixed(2) : '';
-      newData.total = percentage ? (amount - parseFloat(newData.commission)).toFixed(2) : amount.toFixed(2);
-    }
-    newBuses[busIndex][type] = newData;
-    setBuses(newBuses);
-  };
+  const updateHOOrOnline = useCallback((busIndex: number, type: 'ho' | 'online', field: keyof Agent, value: string) => {
+    setBuses(prevBuses => {
+      const newBuses = [...prevBuses];
+      const newData = { ...newBuses[busIndex][type], [field]: value };
+      if (field === 'amount' || field === 'percentage') {
+        const amount = parseFloat(newData.amount) || 0;
+        const percentage = parseFloat(newData.percentage) || 0;
+        newData.commission = percentage ? (amount * percentage / 100).toFixed(2) : '';
+        newData.total = percentage ? (amount - parseFloat(newData.commission)).toFixed(2) : amount.toFixed(2);
+      }
+      newBuses[busIndex][type] = newData;
+      return newBuses;
+    });
+  }, []);
 
-  const calculateTotals = (bus) => {
+  const calculateTotals = useCallback((bus: BusData) => {
     const totalSeats = [bus.ho, bus.online, ...bus.agents].reduce((sum, item) => sum + (parseInt(item.seat) || 0), 0);
     const totalAmount = [bus.ho, bus.online, ...bus.agents].reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
     const totalTotal = [bus.ho, bus.online, ...bus.agents].reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
     return { totalSeats, totalAmount: totalAmount.toFixed(2), totalTotal: totalTotal.toFixed(2) };
-  };
+  }, []);
 
-  const calculateAllBusesTotal = () => {
+  const calculateAllBusesTotal = useCallback(() => {
     return buses.reduce((sum, bus) => sum + parseFloat(calculateTotals(bus).totalTotal), 0).toFixed(2);
-  };
+  }, [buses, calculateTotals]);
 
-  const updateReportData = (type, index, field, value) => {
-    const newReportData = { ...reportData };
-    newReportData[type][index] = { ...newReportData[type][index], [field]: value };
-    setReportData(newReportData);
-  };
+  const updateReportData = useCallback((type: 'receipt' | 'payment', index: number, field: 'amount' | 'particulars' | 'description', value: string) => {
+    setReportData(prevData => {
+      const newReportData = { ...prevData };
+      newReportData[type][index] = { ...newReportData[type][index], [field]: value };
+      return newReportData;
+    });
+  }, []);
 
-  const addReportRow = (type) => {
-    const newReportData = { ...reportData };
-    newReportData[type].push({ amount: '', [type === 'receipt' ? 'particulars' : 'description']: '' });
-    setReportData(newReportData);
-  };
+  const addReportRow = useCallback((type: 'receipt' | 'payment') => {
+    setReportData(prevData => {
+      const newReportData = { ...prevData };
+      newReportData[type].push({ amount: '', [type === 'receipt' ? 'particulars' : 'description']: '' });
+      return newReportData;
+    });
+  }, []);
 
-  const calculateReportTotal = (type) => {
+  const calculateReportTotal = useCallback((type: 'receipt' | 'payment') => {
     return reportData[type].reduce((total, item) => total + (parseFloat(item.amount) || 0), 0).toFixed(2);
-  };
+  }, [reportData]);
+
+  
 
   const renderBusWiseTab = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -759,7 +1030,7 @@ export default function Dashboard() {
   );
 
   const generateBusWisePDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF() as jsPDFWithAutoTable;
     doc.setFontSize(18);
     doc.text('Akanksha Tourism', 105, 15, { align: 'center' });
     doc.setFontSize(12);
@@ -769,7 +1040,6 @@ export default function Dashboard() {
     const boxHeight = 80;
     const margin = 5;
     const columns = 3;
-    const rows = 3;
     buses.forEach((bus, index) => {
       const col = index % columns;
       const row = Math.floor(index / columns);
@@ -804,14 +1074,14 @@ export default function Dashboard() {
   };
 
   const generateAgentWisePDF = () => {
-    const doc = new jsPDF('l', 'mm', 'a4');
+    const doc = new jsPDF('l', 'mm', 'a4') as jsPDFWithAutoTable;
     const pageWidth = doc.internal.pageSize.width;
     
     doc.setFontSize(24);
-    doc.setFont(undefined, 'bold');
+    doc.setFont("helvetica", 'bold');
     doc.text('Akanksha Tourism - Agent Wise Report', pageWidth / 2, 20, { align: 'center' });
     doc.setFontSize(14);
-    doc.setFont(undefined, 'normal');
+    doc.setFont("helvetica", 'normal');
     doc.text(`Date: ${date}`, pageWidth - 10, 20, { align: 'right' });
 
     const allAgents = buses.flatMap((bus, busIndex) => 
@@ -855,7 +1125,7 @@ export default function Dashboard() {
         0: { cellWidth: 40, fontStyle: 'bold' },
         [tableData[0].length - 1]: { cellWidth: 30, fontStyle: 'bold' }
       },
-      didParseCell: (data) => {
+      didParseCell: (data: { row: { index: number; }; cell: { styles: { fontStyle: string; textColor: number[]; }; }; }) => {
         if (data.row.index === tableData.length - 2) {
           data.cell.styles.fontStyle = 'bold';
           data.cell.styles.textColor = [0, 0, 100];
@@ -866,72 +1136,94 @@ export default function Dashboard() {
     doc.save('agent_wise_report.pdf');
   };
 
-  const generateReportsPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text('Akanksha Tourism', 105, 15, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text(`Date: ${date}`, 195, 15, { align: 'right' });
+  
 
-    const pageWidth = doc.internal.pageSize.width;
-    const margin = 10;
-    const columnWidth = (pageWidth - 2 * margin) / 2;
+const generateReportsPDF = () => {
+  const doc = new jsPDF() as jsPDFWithAutoTable;
+  doc.setFontSize(18);
+  doc.text('Akanksha Tourism', 105, 15, { align: 'center' });
+  doc.setFontSize(12);
+  doc.text(`Date: ${date}`, 195, 15, { align: 'right' });
 
-    // RECEIPT Table
-    doc.setFontSize(14);
-    doc.setTextColor(255, 255, 255);
-    doc.setFillColor(255, 165, 0); // Orange color
-    doc.rect(margin, 25, columnWidth, 8, 'F');
-    doc.text('RECEIPT', margin + 2, 31);
+  const pageWidth = doc.internal.pageSize.width;
+  const margin = 10;
+  const columnWidth = (pageWidth - 2 * margin) / 2;
 
-    doc.autoTable({
-      startY: 33,
-      head: [['Amount', 'Particulars']],
-      body: reportData.receipt.map(item => [item.amount, item.particulars]),
-      theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0] },
-      columnStyles: {
-        0: { cellWidth: columnWidth * 0.3 },
-        1: { cellWidth: columnWidth * 0.7 }
-      },
-      margin: { left: margin },
-      tableWidth: columnWidth,
-    });
+  // RECEIPT Table
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.setFillColor(255, 165, 0); // Orange color
+  doc.rect(margin, 25, columnWidth, 8, 'F');
+  doc.text('RECEIPT', margin + 2, 31);
 
-    // PAYMENT Table
-    doc.setFontSize(14);
-    doc.setTextColor(255, 255, 255);
-    doc.setFillColor(255, 165, 0); // Orange color
-    doc.rect(margin + columnWidth, 25, columnWidth, 8, 'F');
-    doc.text('PAYMENT', margin + columnWidth + 2, 31);
+  doc.autoTable({
+    startY: 33,
+    head: [['Amount', 'Particulars']],
+    body: reportData.receipt.map(item => [item.amount, item.particulars || '']),
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0] },
+    columnStyles: {
+      0: { cellWidth: columnWidth * 0.3 },
+      1: { cellWidth: columnWidth * 0.7 }
+    },
+    margin: { left: margin },
+    tableWidth: columnWidth,
+  });
 
-    doc.autoTable({
-      startY: 33,
-      head: [['Amount', 'Description']],
-      body: reportData.payment.map(item => [item.amount, item.description]),
-      theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0] },
-      columnStyles: {
-        0: { cellWidth: columnWidth * 0.3 },
-        1: { cellWidth: columnWidth * 0.7 }
-      },
-      margin: { left: margin + columnWidth },
-      tableWidth: columnWidth,
-    });
+  const receiptTableEndY = (doc as jsPDFWithAutoTable).lastAutoTable.finalY;
 
-    // Add totals at the bottom of each table
-    const receiptTotal = calculateReportTotal('receipt');
-    const paymentTotal = calculateReportTotal('payment');
+  // PAYMENT Table
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.setFillColor(255, 165, 0); // Orange color
+  doc.rect(margin + columnWidth, 25, columnWidth, 8, 'F');
+  doc.text('PAYMENT', margin + columnWidth + 2, 31);
 
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Total: ${receiptTotal}`, margin, doc.autoTable.previous.finalY + 10);
-    doc.text(`Total: ${paymentTotal}`, margin + columnWidth, doc.autoTable.previous.finalY + 10);
+  doc.autoTable({
+    startY: 33,
+    head: [['Amount', 'Description']],
+    body: reportData.payment.map(item => [item.amount, item.description || '']),
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0] },
+    columnStyles: {
+      0: { cellWidth: columnWidth * 0.3 },
+      1: { cellWidth: columnWidth * 0.7 }
+    },
+    margin: { left: margin + columnWidth },
+    tableWidth: columnWidth,
+  });
 
-    doc.save('financial_report.pdf');
-  };
+  doc.autoTable({
+    startY: 33,
+    head: [['Amount', 'Description']],
+    body: reportData.payment.map(item => [item.amount, item.description || '']),
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0] },
+    columnStyles: {
+      0: { cellWidth: columnWidth * 0.3 },
+      1: { cellWidth: columnWidth * 0.7 }
+    },
+    margin: { left: margin + columnWidth },
+    tableWidth: columnWidth,
+  });
+
+  const paymentTableEndY = doc.autoTable.previous.finalY;
+
+  // Add totals at the bottom of each table
+  const receiptTotal = calculateReportTotal('receipt');
+  const paymentTotal = calculateReportTotal('payment');
+
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Total: ${receiptTotal}`, margin, receiptTableEndY + 10);
+  doc.text(`Total: ${paymentTotal}`, margin + columnWidth, paymentTableEndY + 10);
+
+  doc.save('financial_report.pdf');
+};
+
 
   const generatePDF = () => {
     if (activeTab === 'bus-wise') {
