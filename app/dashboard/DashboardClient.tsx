@@ -1210,7 +1210,7 @@ const generateReportsPDF = () => {
     tableWidth: columnWidth,
   });
 
-  const paymentTableEndY = doc.autoTable.previous.finalY;
+  const paymentTableEndY = doc.lastAutoTable.finalY;
 
   // Add totals at the bottom of each table
   const receiptTotal = calculateReportTotal('receipt');
